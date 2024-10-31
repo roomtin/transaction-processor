@@ -49,13 +49,13 @@ fn main() {
             process_transaction(tx_record, &mut clients, &mut processed_txs, &mut held_txs)
         });
 
-        if let Err(_e) = process_result {
-            //If debugging, uncomment to print errors to stderr:
-            //eprintln!("{_e}");
+        if let Err(e) = process_result {
+            eprintln!("{e}");
         }
     }
 
-    //Round the clients' fund values to 4 decimal places
+    //Round the clients' fund values to 4 decimal places.
+    //Truncating caused unexpected results in the tests.
     for client in clients.values_mut() {
         client.available = (client.available * 10000.0f64).round() / 10000.0f64;
         client.total = (client.total * 10000.0f64).round() / 10000.0f64;
@@ -65,9 +65,9 @@ fn main() {
     //Create the csv writer
     let mut csv_writer = Writer::from_writer(std::io::stdout());
 
-    //Serialize the client records to stdout
+    //Serialize the client records to stdout.
     //Since row order is irrelevant, iterating over
-    //the hashmap values is sufficient
+    //the hashmap values is sufficient. (undefined order)
     for client in clients.values() {
         csv_writer
             .serialize(client)
@@ -93,6 +93,11 @@ fn process_transaction(
                 .entry(tx.client)
                 .or_insert_with(|| Client::new(tx.client));
 
+            //A client who's account is frozen cannot do any transactions
+            if client.locked {
+                return Err(format!("Client is locked: {tx:?}"));
+            }
+
             //Unwrap the amount or return an error if it doesn't exist
             let amount = tx
                 .amount
@@ -111,6 +116,11 @@ fn process_transaction(
             let client = clients
                 .entry(tx.client)
                 .or_insert_with(|| Client::new(tx.client));
+
+            //A client who's account is frozen cannot do any transactions
+            if client.locked {
+                return Err(format!("Client is locked: {tx:?}"));
+            }
 
             //Unwrap the amount or return an error if it doesn't exist
             let amount = tx
@@ -144,6 +154,11 @@ fn process_transaction(
                 .get_mut(&disputed_tx.client)
                 .ok_or_else(|| format!("Dispute references non-existent client: {tx:?}"))?;
 
+            //A client who's account is frozen cannot do any transactions
+            if client.locked {
+                return Err(format!("Client is locked: {tx:?}"));
+            }
+
             //Check that the disputed transaction is a deposit or withdrawal
             if disputed_tx.tx_type != TransactionType::Deposit
                 && disputed_tx.tx_type != TransactionType::Withdrawal
@@ -153,7 +168,7 @@ fn process_transaction(
                 ));
             }
 
-            //Unwrap the amount, as we've ensured it exists if the transaction
+            //Unwrap the amount, as we've already ensured it exists if the transaction
             //is a deposit or withdrawal
             let amount = disputed_tx.amount.unwrap();
 
@@ -178,7 +193,12 @@ fn process_transaction(
                 .get_mut(&disputed_tx.client)
                 .ok_or_else(|| format!("Resolve references non-existent client: {tx:?}"))?;
 
-            //Unwrap the amount, as we've ensured it exists if the transaction
+            //A client who's account is frozen cannot do any transactions
+            if client.locked {
+                return Err(format!("Client is locked: {tx:?}"));
+            }
+
+            //Unwrap the amount, as we've already ensured it exists if the transaction
             //is in the disputed txs hashmap
             let amount = disputed_tx.amount.unwrap();
 
@@ -202,7 +222,12 @@ fn process_transaction(
                 .get_mut(&disputed_tx.client)
                 .ok_or_else(|| format!("Chargeback references non-existent client: {tx:?}"))?;
 
-            //Unwrap the amount, as we've ensured it exists if the transaction
+            //A client who's account is frozen cannot do any transactions
+            if client.locked {
+                return Err(format!("Client is locked: {tx:?}"));
+            }
+
+            //Unwrap the amount, as we've already ensured it exists if the transaction
             //is in the disputed txs hashmap
             let amount = disputed_tx.amount.unwrap();
 

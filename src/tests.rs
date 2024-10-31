@@ -282,6 +282,67 @@ fn test_chargeback() {
     assert_eq!(held_txs.contains_key(&2), false);
 }
 
+///Test that a dispute on a transaction that doesn't exist errors, but doesn't affect anything
+#[test]
+fn test_dispute_nonexistent() {
+    let mut clients = HashMap::new();
+    let mut processed_txs = RingBuffer::with_capacity(10);
+    let mut held_txs = HashMap::new();
+
+    let tx = Transaction {
+        tx_type: TransactionType::Dispute,
+        client: 1,
+        id: 1,
+        amount: None,
+    };
+
+    let result = process_transaction(tx, &mut clients, &mut processed_txs, &mut held_txs);
+    assert_eq!(result.is_err(), true);
+    assert_eq!(processed_txs.is_empty(), true);
+    assert_eq!(clients.contains_key(&1), false);
+    assert_eq!(held_txs.is_empty(), true);
+}
+
+///Test that resolve transaction which doesn't exist errors, but doesn't affect anything
+#[test]
+fn test_resolve_nonexistent() {
+    let mut clients = HashMap::new();
+    let mut processed_txs = RingBuffer::with_capacity(10);
+    let mut held_txs = HashMap::new();
+
+    let tx = Transaction {
+        tx_type: TransactionType::Resolve,
+        client: 1,
+        id: 1,
+        amount: None,
+    };
+
+    let result = process_transaction(tx, &mut clients, &mut processed_txs, &mut held_txs);
+    assert_eq!(result.is_err(), true);
+    assert_eq!(processed_txs.is_empty(), true);
+    assert_eq!(clients.contains_key(&1), false);
+}
+
+///Test that chargeback transaction which doesn't exist errors, but doesn't affect anything
+#[test]
+fn test_chargeback_nonexistent() {
+    let mut clients = HashMap::new();
+    let mut processed_txs = RingBuffer::with_capacity(10);
+    let mut held_txs = HashMap::new();
+
+    let tx = Transaction {
+        tx_type: TransactionType::Chargeback,
+        client: 1,
+        id: 1,
+        amount: None,
+    };
+
+    let result = process_transaction(tx, &mut clients, &mut processed_txs, &mut held_txs);
+    assert_eq!(result.is_err(), true);
+    assert_eq!(processed_txs.is_empty(), true);
+    assert_eq!(clients.contains_key(&1), false);
+}
+
 ///Test that client amounts are rounded to 4 decimal places
 #[test]
 fn test_rounding() {

@@ -78,6 +78,12 @@ impl<T> RingBuffer<T> {
     pub fn pop(&mut self) -> Option<T> {
         self.inside.pop_front()
     }
+
+    ///Returns whether the buffer is empty
+    #[cfg(test)]
+    pub fn is_empty(&self) -> bool {
+        self.inside.is_empty()
+    }
 }
 
 impl RingBuffer<Transaction> {
@@ -85,8 +91,7 @@ impl RingBuffer<Transaction> {
     ///
     ///There may be more efficient ways to search for a transaction by ID, but
     ///since disputes should be rarer than deposits and withdrawals, it makes
-    ///most sense to primarily optimize for adding and removing transactions
-    ///from the buffer.
+    ///most sense to primarily optimize a buffer for adding and removing transactions
     pub fn get_by_tx(&self, id: u32) -> Option<&Transaction> {
         self.inside.iter().find(|tx| tx.id == id)
     }
